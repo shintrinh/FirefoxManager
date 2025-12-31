@@ -6,17 +6,51 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<h1>Firefox Profile Manager (Stage 3)</h1>
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Firefox utilities</p>
+      <h1>Profile Manager</h1>
+      <p class="lede">Create, inspect, and manage local Firefox profiles stored in the embedded SQLite database.</p>
+    </div>
+    <div class="header-actions">
+      <button class="primary" onclick="addProfile()">+ New profile</button>
+      <button onclick="exportDB()">Export DB</button>
+      <input type="file" id="importFile" hidden onchange="importDB(event)" />
+      <button onclick="document.getElementById('importFile').click()">Import DB</button>
+    </div>
+  </header>
 
-<div id="controls">
-  <input id="searchInput" placeholder="Search..." />
-  <button onclick="addProfile()">+ Add Profile</button>
-  <button onclick="exportDB()">Export DB</button>
-  <input type="file" id="importFile" hidden onchange="importDB(event)" />
-  <button onclick="document.getElementById('importFile').click()">Import DB</button>
-</div>
+  <section class="metrics" aria-label="profile metrics">
+    <div class="metric-card">
+      <p class="label">Total profiles</p>
+      <p class="value" id="metricTotal">0</p>
+    </div>
+    <div class="metric-card">
+      <p class="label">Live</p>
+      <p class="value" id="metricLive">0</p>
+    </div>
+    <div class="metric-card">
+      <p class="label">Locked</p>
+      <p class="value" id="metricLocked">0</p>
+    </div>
+  </section>
 
-<div id="profileList"></div>
+  <section class="toolbar" aria-label="profile filters">
+    <div class="field">
+      <label for="searchInput">Search by name</label>
+      <input id="searchInput" placeholder="Search profiles" />
+    </div>
+    <div class="field">
+      <label for="statusFilter">Status</label>
+      <select id="statusFilter">
+        <option value="all">All</option>
+        <option value="live">Live</option>
+        <option value="lock">Locked</option>
+      </select>
+    </div>
+  </section>
+
+  <section id="profileList" class="profiles" aria-live="polite"></section>
 
 <!-- Modal -->
 <div id="editModal" class="modal">

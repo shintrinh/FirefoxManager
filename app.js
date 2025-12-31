@@ -2,17 +2,27 @@
 let db;
 let SQL;
 let currentEditId = null;
+let searchInput;
+let statusFilter;
 
 async function initDB() {
   SQL = await initSqlJs({ locateFile: f => f });
 
   const saved = await loadFromIndexedDB();
-  if (saved) db = new SQL.Database(saved);
-  else {
+  if (saved) {
+    const buffer = saved instanceof Uint8Array ? saved : new Uint8Array(saved);
+    db = new SQL.Database(buffer);
+  } else {
     db = new SQL.Database();
     createTables();
     saveToIndexedDB();
   }
+
+  searchInput = document.getElementById('searchInput');
+  statusFilter = document.getElementById('statusFilter');
+  searchInput.addEventListener('input', renderProfiles);
+  statusFilter.addEventListener('change', renderProfiles);
+
   renderProfiles();
 }
 
@@ -50,26 +60,61 @@ function deleteProfile(id) {
 }
 
 function renderProfiles() {
-  const q = document.getElementById('searchInput').value.toLowerCase();
+  const q = searchInput.value.toLowerCase();
+  const status = statusFilter.value;
   const list = document.getElementById('profileList');
   list.innerHTML = "";
-  const res = db.exec("SELECT * FROM profiles ORDER BY id DESC");
-  if (res.length===0){ list.innerHTML="<i>No profiles.</i>"; return; }
-  const rows = res[0].values;
 
-  rows.filter(r=>r[1].toLowerCase().includes(q)).forEach(r=>{
-    const [id,name,status] = r;
-    const div=document.createElement("div");
-    div.className="profile";
-    div.innerHTML=`
-      <b>${name}</b> (ID: ${id})<br>
-      Status: ${status}<br><br>
-      <button onclick="openProfile(${id})">Open</button>
-      <button onclick="deleteProfile(${id})">Delete</button>
-      <button onclick="editProfile(${id})">Edit</button>
+  const res = db.exec("SELECT * FROM profiles ORDER BY id DESC");
+  if (res.length === 0) {
+    updateMetrics(0, 0, 0);
+    list.innerHTML = '<div class="empty">No profiles created yet.</div>';
+    return;
+  }
+
+  const rows = res[0].values;
+  const filtered = rows.filter(row => {
+    const matchesSearch = row[1].toLowerCase().includes(q);
+    const matchesStatus = status === 'all' ? true : row[2] === status;
+    return matchesSearch && matchesStatus;
+  });
+
+  const liveCount = rows.filter(r => r[2] === 'live').length;
+  const lockCount = rows.filter(r => r[2] === 'lock').length;
+  updateMetrics(rows.length, liveCount, lockCount);
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty">No profiles match the current filters.</div>';
+    return;
+  }
+
+  filtered.forEach(r => {
+    const [id, name, statusValue, created] = r;
+    const div = document.createElement("article");
+    div.className = "profile";
+    div.innerHTML = `
+      <div class="profile__header">
+        <div>
+          <p class="profile__id">ID #${id}</p>
+          <h3>${name}</h3>
+        </div>
+        <span class="status ${statusValue}">${statusValue}</span>
+      </div>
+      <p class="muted">Created: ${created}</p>
+      <div class="actions">
+        <button onclick="openProfile(${id})">Open</button>
+        <button onclick="deleteProfile(${id})">Delete</button>
+        <button onclick="editProfile(${id})">Edit</button>
+      </div>
     `;
     list.appendChild(div);
   });
+}
+
+function updateMetrics(total, live, locked) {
+  document.getElementById('metricTotal').textContent = total;
+  document.getElementById('metricLive').textContent = live;
+  document.getElementById('metricLocked').textContent = locked;
 }
 
 function openProfile(id){ alert("Call Firefox with profile: "+id); }
@@ -125,8 +170,6 @@ function saveProfile(){
   closeModal();
   renderProfiles();
 }
-
-document.getElementById("searchInput").addEventListener("input", renderProfiles);
 
 function exportDB(){
   const data=db.export();
