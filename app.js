@@ -9,8 +9,10 @@ async function initDB() {
   SQL = await initSqlJs({ locateFile: f => f });
 
   const saved = await loadFromIndexedDB();
-  if (saved) db = new SQL.Database(saved);
-  else {
+  if (saved) {
+    const buffer = saved instanceof Uint8Array ? saved : new Uint8Array(saved);
+    db = new SQL.Database(buffer);
+  } else {
     db = new SQL.Database();
     createTables();
     saveToIndexedDB();
