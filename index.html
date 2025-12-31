@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <title>Firefox Profile Manager Stage 3</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<h1>Firefox Profile Manager (Stage 3)</h1>
+
+<div id="controls">
+  <input id="searchInput" placeholder="Search..." />
+  <button onclick="addProfile()">+ Add Profile</button>
+  <button onclick="exportDB()">Export DB</button>
+  <input type="file" id="importFile" hidden onchange="importDB(event)" />
+  <button onclick="document.getElementById('importFile').click()">Import DB</button>
+</div>
+
+<div id="profileList"></div>
+
+<!-- Modal -->
+<div id="editModal" class="modal">
+  <div class="modal-content">
+    <h2>Edit Profile</h2>
+    <div id="modalBody"></div>
+    <button onclick="saveProfile()">Save</button>
+    <button onclick="closeModal()">Close</button>
+  </div>
+</div>
+
+<script src="sql-wasm.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
